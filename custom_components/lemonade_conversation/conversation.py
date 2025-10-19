@@ -12,16 +12,14 @@ from .const import DOMAIN, CONF_BASE_URL, CONF_API_KEY, CONF_MODEL, CONF_TEMPERA
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Lemonade Conversation from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = entry.data.copy()
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Set up the Lemonade Conversation platform."""
+    # This function is required by Home Assistant but we don't need to do anything special here
+    # The actual agent setup happens in async_get_agent
     return True
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if DOMAIN in hass.data:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
 
 class LemonadeConversationImpl:
@@ -33,7 +31,7 @@ class LemonadeConversationImpl:
         self.entry = entry
         self.base_url = entry.data.get(CONF_BASE_URL, "")
         self.api_key = entry.data.get(CONF_API_KEY, "")
-        self.model = entry.data.get(CONF_MODEL, "Qwen3-Coder-30B-A3B-Instruct-GGUF")
+        self.model = entry.data.get(CONF_MODEL, "Qwen3-Coder-32B-Instruct")
         self.temperature = entry.data.get(CONF_TEMPERATURE, 0.5)
         self.max_tokens = entry.data.get(CONF_MAX_TOKENS, 150)
         self.verify_ssl = entry.data.get(CONF_VERIFY_SSL, True)
@@ -60,11 +58,6 @@ class LemonadeConversationImpl:
                     "content": "You are a helpful assistant that can control Home Assistant devices. When you receive a request, respond in a way that helps the user control their smart home."
                 }
             ]
-            
-            # Add conversation history if available
-            if hasattr(self, 'conversation_id'):
-                # This would handle conversation history
-                pass
             
             messages.append({
                 "role": "user",
@@ -111,7 +104,6 @@ class LemonadeConversationImpl:
                 conversation_id=user_input.conversation_id
             )
 
-# Esta función es requerida por Home Assistant para crear el agente de conversación
 async def async_get_agent(hass: HomeAssistant, entry: ConfigEntry) -> LemonadeConversationImpl:
     """Get the Lemonade Conversation agent."""
     return LemonadeConversationImpl(hass, entry)
