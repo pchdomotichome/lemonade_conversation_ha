@@ -12,7 +12,6 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_entities=None) -> bool:
     """Set up the Lemonade Conversation platform."""
-    # Esta función ya no hace nada especial, se maneja desde el __init__.py
     return True
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
