@@ -14,6 +14,8 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up the Lemonade Conversation platform."""
+    # This is required by Home Assistant's platform setup mechanism
+    # Return True to indicate successful setup
     return True
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
