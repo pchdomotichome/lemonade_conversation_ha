@@ -10,14 +10,6 @@ from .const import DOMAIN, CONF_BASE_URL, CONF_API_KEY, CONF_MODEL, CONF_TEMPERA
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_entities=None) -> bool:
-    """Set up the Lemonade Conversation platform."""
-    return True
-
-async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
-    return True
-
 class LemonadeConversationImpl:
     """Lemonade Conversation agent."""
 
