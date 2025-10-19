@@ -1,116 +1,83 @@
+# /config/custom_components/lemonade_conversation/config_flow.py
+
+from __future__ import annotations
+import logging
+from typing import Any
+
 import voluptuous as vol
-import aiohttp
-from homeassistant import config_entries
+
+from homeassistant.config_entries import ConfigFlow, OptionsFlow, ConfigEntry
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from .const import (
-    DOMAIN,
-    CONF_BASE_URL,
-    CONF_API_KEY,
-    CONF_MODEL,
-    CONF_TEMPERATURE,
-    CONF_MAX_TOKENS,
-    CONF_VERIFY_SSL,
-    DEFAULT_BASE_URL,
-    DEFAULT_MODEL,
-    DEFAULT_TEMPERATURE,
-    DEFAULT_MAX_TOKENS,
-    DEFAULT_VERIFY_SSL
+
+from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
+
+# Esquema para la configuración inicial
+STEP_USER_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Required("api_key"): str,
+        # AÑADIMOS ESTE CAMPO PARA LA URL DE TU SERVIDOR
+        vol.Required("base_url", default="http://localhost:8000/v1"): str,
+    }
 )
 
-class LemonadeConversationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+# Esquema para las opciones (modelo, etc.)
+OPTIONS_SCHEMA = vol.Schema(
+    {
+        vol.Optional("model", default="local-model"): str,
+        # Puedes añadir más opciones aquí en el futuro (temperatura, etc.)
+    }
+)
+
+
+class LemonadeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Lemonade Conversation."""
 
-    VERSION = 2
+    VERSION = 1
 
-    def __init__(self):
-        """Initialize the config flow."""
-        self._base_url = None
-        self._models = []
-
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step."""
-        errors = {}
-        
-        if user_input is not None:
-            self._base_url = user_input.get(CONF_BASE_URL, DEFAULT_BASE_URL)
-            
-            # Validate base URL
-            if not self._base_url.startswith(("http://", "https://")):
-                errors[CONF_BASE_URL] = "invalid_url"
-            elif not self._base_url.endswith("/api/v1/"):
-                # Automatically append /api/v1/ if missing
-                self._base_url = self._base_url.rstrip("/") + "/api/v1/"
-            
-            if not errors:
-                # Try to fetch available models
-                try:
-                    models = await self._fetch_models()
-                    self._models = models
-                    return await self.async_step_model_selection()
-                except Exception as ex:
-                    errors[CONF_BASE_URL] = "connection_failed"
-                    self._base_url = user_input[CONF_BASE_URL]
-
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_BASE_URL, default=DEFAULT_BASE_URL): str,
-                vol.Optional(CONF_API_KEY): str,
-                vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): bool,
-            }),
-            errors=errors
-        )
-
-    async def async_step_model_selection(self, user_input=None):
-        """Handle model selection."""
-        errors = {}
-        
-        if user_input is not None:
-            return self.async_create_entry(
-                title="Lemonade Conversation",
-                data={
-                    CONF_BASE_URL: self._base_url,
-                    CONF_API_KEY: user_input.get(CONF_API_KEY),
-                    CONF_MODEL: user_input.get(CONF_MODEL, DEFAULT_MODEL),
-                    CONF_TEMPERATURE: user_input.get(CONF_TEMPERATURE, DEFAULT_TEMPERATURE),
-                    CONF_MAX_TOKENS: user_input.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS),
-                    CONF_VERIFY_SSL: user_input.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL),
-                }
+        if user_input is None:
+            return self.async_show_form(
+                step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
 
-        # Create model selection dropdown
-        model_schema = {}
-        if self._models:
-            model_schema[vol.Required(CONF_MODEL, default=DEFAULT_MODEL)] = vol.In(self._models)
-        else:
-            model_schema[vol.Required(CONF_MODEL, default=DEFAULT_MODEL)] = str
+        # Aquí puedes añadir validación si quieres (ej. intentar conectar a la URL)
+        
+        await self.async_set_unique_id(DOMAIN)
+        self._abort_if_unique_id_configured()
+
+        return self.async_create_entry(title="Lemonade Conversation", data=user_input)
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Get the options flow for this handler."""
+        return LemonadeOptionsFlowHandler(config_entry)
+
+
+class LemonadeOptionsFlowHandler(OptionsFlow):
+    """Handle an options flow for Lemonade."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
-            step_id="model_selection",
-            data_schema=vol.Schema({
-                **model_schema,
-                vol.Optional(CONF_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.Coerce(float),
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.Coerce(int),
-                vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): bool,
-            }),
-            errors=errors
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        "model",
+                        default=self.config_entry.options.get("model", "local-model"),
+                    ): str,
+                }
+            ),
         )
-
-    async def _fetch_models(self):
-        """Fetch available models from Lemonade Server."""
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"{self._base_url.rstrip('/')}/models") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        # Handle different response formats
-                        if isinstance(data, dict) and 'data' in data:
-                            return [model.get('id') for model in data['data'] if model.get('id')]
-                        elif isinstance(data, list):
-                            return [model.get('id') for model in data if model.get('id')]
-                        else:
-                            return [DEFAULT_MODEL]
-                    else:
-                        return [DEFAULT_MODEL]
-        except Exception:
-            return [DEFAULT_MODEL]
