@@ -8,19 +8,20 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 # Define las plataformas que tu integración va a utilizar.
-# ¡Este es el cambio clave!
 PLATFORMS: list[Platform] = [Platform.CONVERSATION]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Lemonade Conversation HA from a config entry."""
-    # Esto le dirá a HA que cargue las plataformas definidas en PLATFORMS.
-    # En nuestro caso, buscará y configurará conversation.py
-    await hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    # ESTA ES LA LÍNEA CORREGIDA
+    # Reenvía la configuración de la entrada a las plataformas especificadas en PLATFORMS.
+    # Home Assistant buscará conversation.py y llamará a su async_setup_entry.
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    # Descarga las plataformas al eliminar la integración.
+    # Esto descargará correctamente las entidades creadas por nuestras plataformas.
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
