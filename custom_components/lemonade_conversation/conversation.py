@@ -1,97 +1,80 @@
-import logging
-from typing import Any, Dict, Optional
-import aiohttp
+# custom_components/lemonade_conversation_ha/conversation.py
 
-from homeassistant.components import conversation
+import logging
+from typing import Literal
+
+from homeassistant.components.conversation import (
+    ConversationAgent,
+    ConversationEntity,
+    ConversationResult,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from .const import DOMAIN, CONF_BASE_URL, CONF_API_KEY, CONF_MODEL, CONF_TEMPERATURE, CONF_MAX_TOKENS, CONF_VERIFY_SSL
+# Importamos la lógica que ya tenías creada
+from .conversation_agent import LemonadeAgent
 
 _LOGGER = logging.getLogger(__name__)
 
-class LemonadeConversationImpl:
-    """Lemonade Conversation agent."""
+# Esta función es llamada por HA cuando configura la plataforma
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up conversation entities."""
+    # Creamos una instancia de nuestra entidad de conversación y la añadimos a HA
+    async_add_entities([LemonadeConversationEntity(hass, config_entry)])
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
+
+class LemonadeConversationEntity(ConversationEntity):
+    """Lemonade Conversation Agent Entity."""
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self.hass = hass
-        self.entry = entry
-        self.base_url = entry.data.get(CONF_BASE_URL, "")
-        self.api_key = entry.data.get(CONF_API_KEY, "")
-        self.model = entry.data.get(CONF_MODEL, "Qwen3-Coder-32B-Instruct")
-        self.temperature = entry.data.get(CONF_TEMPERATURE, 0.5)
-        self.max_tokens = entry.data.get(CONF_MAX_TOKENS, 150)
-        self.verify_ssl = entry.data.get(CONF_VERIFY_SSL, True)
-        
-    @property
-    def name(self) -> str:
-        """Return the name of the agent."""
-        return "Lemonade Conversation"
+        self._entry = entry
+        # Creamos una instancia de nuestro agente lógico, pasándole la configuración
+        self._agent = LemonadeAgent(hass, entry)
+        # Asignamos un ID único a la entidad basado en el ID de la entrada de configuración
+        self._attr_unique_id = entry.entry_id
+        # El nombre que aparecerá en la interfaz de usuario de HA
+        self._attr_name = "Lemonade Assistant"
 
-    async def async_process(self, user_input: conversation.ConversationInput) -> conversation.ConversationResult:
+    @property
+    def supported_languages(self) -> list[str] | Literal["*"]:
+        """Return a list of supported languages."""
+        # Soporta todos los idiomas, ya que el modelo subyacente lo hace.
+        return "*"
+
+    async def async_process(
+        self, user_input: str, conversation_id: str | None = None
+    ) -> ConversationResult:
         """Process a sentence."""
+        _LOGGER.debug("Processing in Lemonade: %s", user_input)
+
         try:
-            headers = {
-                "Content-Type": "application/json"
-            }
+            # Llamamos al método de procesamiento de nuestra clase LemonadeAgent
+            agent_response = await self._agent.async_process(user_input, conversation_id)
             
-            if self.api_key:
-                headers["Authorization"] = f"Bearer {self.api_key}"
-            
-            # Prepare messages for the conversation
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that can control Home Assistant devices. When you receive a request, respond in a way that helps the user control their smart home."
-                }
-            ]
-            
-            messages.append({
-                "role": "user",
-                "content": user_input.text
-            })
-            
-            # Call Lemonade API
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.base_url.rstrip('/')}/chat/completions",
-                    headers=headers,
-                    json={
-                        "model": self.model,
-                        "messages": messages,
-                        "temperature": self.temperature,
-                        "max_tokens": self.max_tokens
-                    },
-                    timeout=aiohttp.ClientTimeout(total=30)
-                ) as response:
-                    if response.status != 200:
-                        _LOGGER.error(f"API error: {response.status}")
-                        return conversation.ConversationResult(
-                            response="Sorry, I encountered an error processing your request.",
-                            conversation_id=user_input.conversation_id
-                        )
-                    
-                    data = await response.json()
-                    if 'choices' in data and len(data['choices']) > 0:
-                        response_text = data['choices'][0]['message']['content'].strip()
-                        return conversation.ConversationResult(
-                            response=response_text,
-                            conversation_id=user_input.conversation_id
-                        )
-                    else:
-                        return conversation.ConversationResult(
-                            response="Sorry, I couldn't generate a response.",
-                            conversation_id=user_input.conversation_id
-                        )
-                        
-        except Exception as ex:
-            _LOGGER.error(f"Error processing conversation: {ex}")
-            return conversation.ConversationResult(
-                response="Sorry, I encountered an error processing your request.",
-                conversation_id=user_input.conversation_id
+            # Creamos una respuesta de intención simple.
+            # Home Assistant se encargará de convertir el texto a voz.
+            response = self.hass.helpers.intent.IntentResponse(self.hass)
+            response.async_set_speech(agent_response["response"])
+
+            return ConversationResult(
+                response=response, conversation_id=conversation_id
             )
 
-async def async_get_agent(hass: HomeAssistant, entry: ConfigEntry) -> LemonadeConversationImpl:
-    """Get the Lemonade Conversation agent."""
-    return LemonadeConversationImpl(hass, entry)
+        except Exception as e:
+            _LOGGER.error("Error processing conversation: %s", e)
+            response = self.hass.helpers.intent.IntentResponse(self.hass)
+            response.async_set_error(
+                "intent_error",
+                f"Lo siento, he tenido un problema al procesar tu solicitud: {e}",
+            )
+            return ConversationResult(
+                response=response, conversation_id=conversation_id
+            )
