@@ -11,8 +11,8 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Lemonade Conversation from a config entry."""
-    # Para integraciones de tipo "conversation", el setup se maneja automáticamente
-    # por el sistema de Home Assistant, no necesitamos forward_entry_setups
+    # Para integraciones de tipo "conversation", no se necesita forward_entry_setups
+    # El sistema maneja automáticamente la configuración del agente de conversación
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
