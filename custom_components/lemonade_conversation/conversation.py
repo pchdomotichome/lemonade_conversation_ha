@@ -5,17 +5,14 @@ import aiohttp
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import intent
-from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, CONF_BASE_URL, CONF_API_KEY, CONF_MODEL, CONF_TEMPERATURE, CONF_MAX_TOKENS, CONF_VERIFY_SSL
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_entities=None) -> bool:
     """Set up the Lemonade Conversation platform."""
-    # This is required by Home Assistant's platform setup mechanism
-    # Return True to indicate successful setup
+    # Esta función es requerida por Home Assistant pero no necesita hacer nada especial
     return True
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
