@@ -1,8 +1,4 @@
-# custom_components/lemonade_conversation/const.py
-from homeassistant.const import Platform
-
 DOMAIN = "lemonade_conversation"
-PLATFORMS = [Platform.CONVERSATION]
 CONF_BASE_URL = "base_url"
 CONF_API_KEY = "api_key"
 CONF_MODEL = "model"
@@ -10,7 +6,7 @@ CONF_TEMPERATURE = "temperature"
 CONF_MAX_TOKENS = "max_tokens"
 CONF_VERIFY_SSL = "verify_ssl"
 DEFAULT_BASE_URL = "http://192.168.30.61:8000/api/v1/"
-DEFAULT_MODEL = "Qwen3-Coder-30B-A3B-Instruct-GGUF"
+DEFAULT_MODEL = "Qwen3-Coder-32B-Instruct"
 DEFAULT_TEMPERATURE = 0.5
 DEFAULT_MAX_TOKENS = 150
 DEFAULT_VERIFY_SSL = True
