@@ -1,0 +1,11 @@
+{
+    "domain": "lemonade_conversation",
+    "name": "Lemonade Conversation",
+    "config_flow": true,
+    "documentation": "https://github.com/pchdomotichome/lemonade_conversation_ha",
+    "issue_tracker": "https://github.com/pchdomotichome/lemonade_conversation_ha/issues",
+    "dependencies": ["conversation"],
+    "codeowners": ["@pchdomotichome"],
+    "requirements": [],
+    "version": "0.1.0"
+  }
