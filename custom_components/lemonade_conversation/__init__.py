@@ -20,7 +20,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_entry(entry)
-    if unload_ok:
+    # Fix: Remove the problematic line that was causing the error
+    # unload_ok = await hass.config_entries.async_unload_entry(entry)
+    # if unload_ok:
+    #     hass.data[DOMAIN].pop(entry.entry_id, None)
+    # return unload_ok
+    
+    # Instead, just clean up the data
+    if DOMAIN in hass.data:
         hass.data[DOMAIN].pop(entry.entry_id, None)
-    return unload_ok
+    return True
