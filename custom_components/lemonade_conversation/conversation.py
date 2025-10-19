@@ -24,16 +24,16 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
 
-class LemonadeConversationImpl(conversation.ConversationImpl):
+class LemonadeConversationImpl:
     """Lemonade Conversation agent."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         """Initialize the agent."""
-        super().__init__(hass, entry)
+        self.hass = hass
         self.entry = entry
         self.base_url = entry.data.get(CONF_BASE_URL, "")
         self.api_key = entry.data.get(CONF_API_KEY, "")
-        self.model = entry.data.get(CONF_MODEL, "gpt-3.5-turbo")
+        self.model = entry.data.get(CONF_MODEL, "Qwen3-Coder-30B-A3B-Instruct-GGUF")
         self.temperature = entry.data.get(CONF_TEMPERATURE, 0.5)
         self.max_tokens = entry.data.get(CONF_MAX_TOKENS, 150)
         self.verify_ssl = entry.data.get(CONF_VERIFY_SSL, True)
@@ -111,6 +111,7 @@ class LemonadeConversationImpl(conversation.ConversationImpl):
                 conversation_id=user_input.conversation_id
             )
 
-async def async_get_agent(hass: HomeAssistant, entry: ConfigEntry) -> conversation.ConversationImpl:
+# Esta función es requerida por Home Assistant para crear el agente de conversación
+async def async_get_agent(hass: HomeAssistant, entry: ConfigEntry) -> LemonadeConversationImpl:
     """Get the Lemonade Conversation agent."""
     return LemonadeConversationImpl(hass, entry)
