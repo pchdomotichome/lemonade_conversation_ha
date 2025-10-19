@@ -5,7 +5,6 @@
   "documentation": "https://github.com/pchdomotichome/lemonade_conversation_ha",
   "issue_tracker": "https://github.com/pchdomotichome/lemonade_conversation_ha/issues",
   "dependencies": ["conversation"],
-  "after_dependencies": ["assist_pipeline"],
   "codeowners": ["@pchdomotichome"],
   "requirements": [],
   "version": "0.2.1",
