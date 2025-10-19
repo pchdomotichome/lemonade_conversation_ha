@@ -1,4 +1,3 @@
-# custom_components/lemonade_conversation/config_flow.py
 import voluptuous as vol
 import aiohttp
 from homeassistant import config_entries
@@ -93,7 +92,6 @@ class LemonadeConversationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.Coerce(float),
                 vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.Coerce(int),
                 vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): bool,
-                vol.Optional(CONF_API_KEY): str,
             }),
             errors=errors
         )
@@ -102,17 +100,14 @@ class LemonadeConversationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Fetch available models from Lemonade Server."""
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    f"{self._base_url.rstrip('/')}/models",
-                    headers={"Content-Type": "application/json"}
-                ) as response:
+                async with session.get(f"{self._base_url.rstrip('/')}/models") as response:
                     if response.status == 200:
                         data = await response.json()
-                        # Extract model names from the response
+                        # Handle different response formats
                         if isinstance(data, dict) and 'data' in data:
-                            return [model.get('id') for model in data.get('data', []) if 'id' in model]
+                            return [model.get('id') for model in data['data'] if model.get('id')]
                         elif isinstance(data, list):
-                            return [model.get('id') for model in data if 'id' in model]
+                            return [model.get('id') for model in data if model.get('id')]
                         else:
                             return [DEFAULT_MODEL]
                     else:
