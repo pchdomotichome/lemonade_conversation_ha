@@ -1,4 +1,3 @@
-# custom_components/lemonade_conversation/__init__.py
 """The Lemonade Conversation integration."""
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -12,14 +11,15 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Lemonade Conversation from a config entry."""
+    # Forward the conversation setup to the conversation component
     hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "conversation")
+        hass.config_entries.async_forward_entry_setups(entry, [Platform.CONVERSATION])
     )
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_forward_entry_unload(entry, "conversation")
+    unload_ok = await hass.config_entries.async_unload_entry(entry)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return unload_ok
