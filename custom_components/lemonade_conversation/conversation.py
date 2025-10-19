@@ -3,7 +3,7 @@
 import logging
 from typing import Literal
 
-# Importación corregida: se eliminó ConversationAgent
+# Importación correcta, sin 'ConversationAgent'
 from homeassistant.components.conversation import (
     ConversationEntity,
     ConversationResult,
@@ -11,6 +11,9 @@ from homeassistant.components.conversation import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+# Importamos la clase que acabamos de mover a su propio archivo
+from .conversation_agent import LemonadeAgent
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,33 +30,28 @@ async def async_setup_entry(
 class LemonadeConversationEntity(ConversationEntity):
     """Lemonade Conversation Agent Entity."""
 
-    _agent = None
+    _agent: LemonadeAgent | None = None
 
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self._entry = entry
         self._attr_unique_id = entry.entry_id
+        # Este será el nombre que veas en la lista de asistentes
         self._attr_name = "Lemonade Assistant"
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
-        """Return a list of supported languages."""
         return "*"
 
     async def async_process(
         self, user_input: str, conversation_id: str | None = None
     ) -> ConversationResult:
         """Process a sentence."""
-        _LOGGER.debug("Processing in Lemonade: %s", user_input)
-
-        # Lazy loading del agente para evitar llamadas bloqueantes al inicio
         if self._agent is None:
-            # Importación pesada movida aquí
-            from .conversation_agent import LemonadeAgent
+            # Creamos la instancia del agente la primera vez que se usa
             self._agent = LemonadeAgent(self.hass, self._entry)
 
         try:
-            # Llamamos al método de procesamiento
             agent_response = await self._agent.async_process(user_input, conversation_id)
             
             response = self.hass.helpers.intent.IntentResponse(self.hass)
@@ -62,13 +60,11 @@ class LemonadeConversationEntity(ConversationEntity):
             return ConversationResult(
                 response=response, conversation_id=conversation_id
             )
-
         except Exception as e:
             _LOGGER.error("Error processing conversation: %s", e)
             response = self.hass.helpers.intent.IntentResponse(self.hass)
             response.async_set_error(
-                "intent_error",
-                f"Lo siento, he tenido un problema al procesar tu solicitud: {e}",
+                "intent_error", f"Lo siento, ocurrió un error: {e}"
             )
             return ConversationResult(
                 response=response, conversation_id=conversation_id
