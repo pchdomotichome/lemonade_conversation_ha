@@ -1,0 +1,7 @@
+{
+    "name": "Lemonade Conversation",
+    "country": "AR",
+    "content_in_root": false,
+    "version": "0.1.0",
+    "homeassistant": "2025.7.0"
+  }
