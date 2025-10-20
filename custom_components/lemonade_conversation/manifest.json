@@ -1,6 +1,7 @@
 {
   "domain": "lemonade_conversation",
   "name": "Lemonade Conversation",
+  "logo": "https://raw.githubusercontent.com/pchdomotichome/lemonade_conversation_ha/main/images/logo.svg",
   "codeowners": ["@pchdomotichome"],
   "config_flow": true,
   "documentation": "https://github.com/pchdomotichome/lemonade_conversation_ha",
