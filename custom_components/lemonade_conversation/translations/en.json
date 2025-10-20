@@ -1,0 +1,24 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "general": "General Settings",
+          "personality": "Personality"
+        }
+      },
+      "general": {
+        "title": "General Settings",
+        "data": {
+          "model": "Language Model"
+        }
+      },
+      "personality": {
+        "title": "Agent Personality",
+        "data": {
+          "system_prompt": "System Prompt"
+        }
+      }
+    }
+  }
+}
