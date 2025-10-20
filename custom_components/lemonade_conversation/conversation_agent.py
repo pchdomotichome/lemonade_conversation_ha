@@ -2,6 +2,7 @@
 
 import logging
 import aiohttp
+from collections import deque
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -9,27 +10,36 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 _LOGGER = logging.getLogger(__name__)
 
+# Límite de turnos de conversación (1 turno = 1 de usuario + 1 de asistente)
+# Un valor de 3 significa que recordará los últimos 3 intercambios.
+CONVERSATION_HISTORY_LIMIT = 3 * 2 # 6 mensajes en total
+
 class LemonadeAgent:
-    """Lemonade Conversation Agent that talks to a Lemonade Server."""
+    """Lemonade Conversation Agent with conversation history."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self.hass = hass
         self.entry = entry
         self.session = async_get_clientsession(hass)
-        # El modelo se coge de los datos principales durante la configuración inicial
-        self.model = entry.data.get("model")
+        self.history: dict[str, deque] = {} # Usamos un deque para limitar el tamaño fácilmente
 
     @property
     def model_in_use(self) -> str:
-        """Return the model currently in use, from options or initial config."""
-        # Las opciones (si se reconfiguran) tienen prioridad sobre los datos iniciales
-        return self.entry.options.get("model", self.model)
-
-    # Reemplaza SOLO la función async_process en conversation_agent.py
+        """Return the model currently in use."""
+        return self.entry.options.get("model", self.entry.data.get("model"))
 
     async def async_process(self, user_input: str, conversation_id: str | None = None) -> dict:
-        """Process a sentence by calling the Lemonade Server."""
+        """Process a sentence by calling the Lemonade Server with history."""
+        
+        # Obtenemos el historial para este ID de conversación. Si no existe, se crea un deque vacío.
+        if conversation_id not in self.history:
+            self.history[conversation_id] = deque(maxlen=CONVERSATION_HISTORY_LIMIT)
+        
+        current_history = self.history[conversation_id]
+
+        # Añadimos el nuevo mensaje del usuario al historial
+        current_history.append({"role": "user", "content": user_input})
         
         base_url = self.entry.data.get("base_url")
         api_key = self.entry.data.get("api_key")
@@ -40,7 +50,11 @@ class LemonadeAgent:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         
-        payload = { "model": self.model_in_use, "messages": [{"role": "user", "content": user_input}] }
+        # El payload ahora contiene todo el historial de la conversación
+        payload = {
+            "model": self.model_in_use,
+            "messages": list(current_history) # Enviamos una lista, no el deque
+        }
         
         _LOGGER.debug(f"Sending payload to Lemonade Server: URL={url}, Payload={payload}")
 
@@ -49,30 +63,23 @@ class LemonadeAgent:
                 response.raise_for_status()
                 data = await response.json()
                 
-                # Este es el log más importante que necesitamos ver
                 _LOGGER.debug(f"Received RAW response from Lemonade Server: {data}")
                 
-                # --- Bloque de parseo mejorado ---
                 try:
-                    # Intentamos acceder a la respuesta como si fuera OpenAI
                     message = data["choices"][0]["message"]["content"]
                 except (KeyError, IndexError, TypeError) as e:
-                    _LOGGER.error(
-                        "Failed to parse Lemonade Server response in the expected OpenAI format. "
-                        f"Error: {e}. This is likely a structure mismatch. Please check the RAW response above."
-                    )
-                    return {"response": "Recibí una respuesta del servidor pero no pude entender su formato. Revisa los logs."}
+                    _LOGGER.error(f"Failed to parse Lemonade Server response: {e}. Raw response: {data}")
+                    return {"response": "Recibí una respuesta del servidor pero no pude entender su formato."}
                 
-                if not message:
-                    _LOGGER.warning(f"Parsed response from Lemonade, but the content was empty. Full response: {data}")
-                    return {"response": "El servidor respondió, pero el contenido estaba vacío."}
+                # Añadimos la respuesta del asistente al historial para el próximo turno
+                assistant_response = message.strip()
+                current_history.append({"role": "assistant", "content": assistant_response})
                 
-                return {"response": message.strip()}
-                # --- Fin del bloque de parseo ---
+                return {"response": assistant_response}
 
         except aiohttp.ClientError as err:
             _LOGGER.error(f"Error connecting to Lemonade Server at {url}: {err}")
             return {"response": f"No pude conectar con el servidor Lemonade: {err}"}
         except Exception:
             _LOGGER.exception("An unexpected error occurred during Lemonade conversation")
-            return {"response": f"Ocurrió un error inesperado. Revisa los logs de Home Assistant para más detalles."}
+            return {"response": "Ocurrió un error inesperado. Revisa los logs de Home Assistant."}
