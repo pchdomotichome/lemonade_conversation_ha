@@ -1,12 +1,13 @@
 # /config/custom_components/lemonade_conversation/conversation.py
 
 import logging
-from typing import Literal
+from typing import AsyncGenerator, Literal
 
 from homeassistant.components.conversation import (
     ConversationEntity,
     ConversationResult,
     ConversationInput,
+    ConversationAgent, # Requerido para el nuevo enfoque
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -24,18 +25,17 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up conversation entities."""
-    async_add_entities([LemonadeConversationEntity(config_entry)])
+    agent = LemonadeAgent(hass, config_entry)
+    async_add_entities([LemonadeConversationEntity(agent)])
 
 
-class LemonadeConversationEntity(ConversationEntity):
+class LemonadeConversationEntity(ConversationAgent): # <- CAMBIO: Hereda de ConversationAgent
     """Lemonade Conversation Agent Entity."""
 
-    _agent: LemonadeAgent | None = None
-
-    def __init__(self, entry: ConfigEntry) -> None:
+    def __init__(self, agent: LemonadeAgent) -> None:
         """Initialize the agent."""
-        self._entry = entry
-        self._attr_unique_id = entry.entry_id
+        self.agent = agent
+        self._attr_unique_id = agent.entry.entry_id
         self._attr_name = "Lemonade Assistant"
 
     @property
@@ -43,52 +43,62 @@ class LemonadeConversationEntity(ConversationEntity):
         """Return a list of supported languages."""
         return "*"
 
-    @property
-    def has_stream_support(self) -> bool:
-        """Return whether the agent supports streaming responses."""
-        return self._entry.options.get("stream", False)
+    # La propiedad has_stream_support ya no es necesaria, se maneja directamente.
 
-    async def async_process(self, user_input: ConversationInput) -> ConversationResult:
-        """Process a sentence, either by streaming or as a single response."""
-        if self._agent is None:
-            self._agent = LemonadeAgent(self.hass, self._entry)
+    async def async_process(
+        self, user_input: ConversationInput
+    ) -> ConversationResult | AsyncGenerator[ConversationResult, None]:
+        """Process a sentence."""
+        
+        # --- ¡ESTE ES EL NUEVO ENFOQUE CORRECTO! ---
+        if self.agent.entry.options.get("stream"):
+            # Si el stream está activado, devolvemos el generador directamente.
+            return self.async_process_stream(user_input)
 
-        # --- ¡ESTE BLOQUE ESTÁ CORREGIDO! ---
-        if self.has_stream_support:
-            # 1. Creamos una respuesta de intención vacía.
-            response = IntentResponse(language=user_input.language)
-            # 2. Le adjuntamos nuestro generador asíncrono usando el método correcto.
-            response.async_set_speech_stream(
-                self._agent.async_process_stream(
-                    user_input.text, user_input.conversation_id
-                )
-            )
-            # 3. Devolvemos el resultado con esta respuesta preparada.
-            return ConversationResult(
-                response=response,
-                conversation_id=user_input.conversation_id,
-            )
-        # --- FIN DEL BLOQUE CORREGIDO ---
+        # Si no, llamamos al método normal.
+        response_text = await self.agent.async_process(
+            user_input.text, user_input.conversation_id
+        )
+        response = IntentResponse(language=user_input.language)
+        response.async_set_speech(response_text["response"])
+        return ConversationResult(response=response, conversation_id=user_input.conversation_id)
 
-        # El bloque 'else' (sin streaming) no cambia y ya funcionaba.
+
+    async def async_process_stream(
+        self, user_input: ConversationInput
+    ) -> AsyncGenerator[ConversationResult, None]:
+        """Process a sentence in a stream."""
+        
+        # 1. Enviamos un evento 'intent-start' para que la UI sepa que estamos trabajando.
+        yield ConversationResult(
+            response=IntentResponse(language=user_input.language),
+            conversation_id=user_input.conversation_id,
+            event=ConversationResult.ListenEvent.INTENT_START,
+        )
+
+        # 2. Iteramos sobre los trozos de texto de nuestro agente.
         try:
-            agent_response = await self._agent.async_process(
+            async for chunk in self.agent.async_process_stream(
                 user_input.text, user_input.conversation_id
-            )
-            response = IntentResponse(language=user_input.language)
-            response.async_set_speech(agent_response["response"])
-            
-            return ConversationResult(
-                response=response, conversation_id=user_input.conversation_id
-            )
+            ):
+                # Por cada trozo, creamos una respuesta parcial.
+                response = IntentResponse(language=user_input.language)
+                response.async_set_speech(chunk)
+                yield ConversationResult(
+                    response=response,
+                    conversation_id=user_input.conversation_id,
+                    event=ConversationResult.ListenEvent.INTENT_PARTIAL_RESPONSE,
+                )
         except Exception:
-            _LOGGER.exception("Error processing Lemonade conversation (non-streamed)")
-            
+            _LOGGER.exception("Error during stream processing")
             response = IntentResponse(language=user_input.language)
-            response.async_set_error(
-                "intent_error",
-                "Ocurrió un error inesperado al procesar la solicitud.",
-            )
-            return ConversationResult(
-                response=response, conversation_id=user_input.conversation_id
-            )
+            response.async_set_error("unknown_error", "An error occurred during streaming.")
+            yield ConversationResult(response=response, conversation_id=user_input.conversation_id)
+            return
+
+        # 3. Al final, enviamos un evento 'intent-end' para que la UI sepa que hemos terminado.
+        yield ConversationResult(
+            response=IntentResponse(language=user_input.language),
+            conversation_id=user_input.conversation_id,
+            event=ConversationResult.ListenEvent.INTENT_END,
+        )
