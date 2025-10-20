@@ -3,16 +3,16 @@
 import logging
 from typing import Literal
 
-# Importación correcta, sin 'ConversationAgent'
+# 1. ACTUALIZACIÓN DE LA IMPORTACIÓN
 from homeassistant.components.conversation import (
     ConversationEntity,
     ConversationResult,
+    ConversationInput, # <-- Añadimos la importación del objeto de entrada
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-# Importamos la clase que acabamos de mover a su propio archivo
 from .conversation_agent import LemonadeAgent
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,36 +36,40 @@ class LemonadeConversationEntity(ConversationEntity):
         """Initialize the agent."""
         self._entry = entry
         self._attr_unique_id = entry.entry_id
-        # Este será el nombre que veas en la lista de asistentes
         self._attr_name = "Lemonade Assistant"
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
         return "*"
 
+    # 2. ACTUALIZACIÓN DE LA FIRMA DE LA FUNCIÓN
     async def async_process(
-        self, user_input: str, conversation_id: str | None = None
+        self, user_input: ConversationInput # <-- Cambiamos el tipo a ConversationInput
     ) -> ConversationResult:
         """Process a sentence."""
         if self._agent is None:
-            # Creamos la instancia del agente la primera vez que se usa
             self._agent = LemonadeAgent(self.hass, self._entry)
 
         try:
-            agent_response = await self._agent.async_process(user_input, conversation_id)
+            # ¡¡LA CORRECCIÓN CLAVE!!
+            # Ahora pasamos explícitamente el texto y el id de la conversación.
+            agent_response = await self._agent.async_process(
+                user_input.text, user_input.conversation_id
+            )
             
             response = self.hass.helpers.intent.IntentResponse(self.hass)
             response.async_set_speech(agent_response["response"])
 
             return ConversationResult(
-                response=response, conversation_id=conversation_id
+                response=response, conversation_id=user_input.conversation_id
             )
         except Exception as e:
-            _LOGGER.error("Error processing conversation: %s", e)
+            # Este log es importante si algo más falla
+            _LOGGER.exception("Error processing Lemonade conversation")
             response = self.hass.helpers.intent.IntentResponse(self.hass)
             response.async_set_error(
-                "intent_error", f"Lo siento, ocurrió un error: {e}"
+                "intent_error", f"Ocurrió un error inesperado. Revisa los logs de Home Assistant."
             )
             return ConversationResult(
-                response=response, conversation_id=conversation_id
+                response=response, conversation_id=user_input.conversation_id
             )
