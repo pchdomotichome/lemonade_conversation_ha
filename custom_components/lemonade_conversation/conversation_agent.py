@@ -95,7 +95,7 @@ class LemonadeAgent:
             return {"response": "An unexpected error occurred."}
 
     async def async_process_stream(self, user_input: str, conversation_id: str | None = None) -> AsyncGenerator[str, None]:
-        """Process a sentence by streaming the response."""
+        """Process a sentence by streaming the response, yielding text chunks."""
         payload, current_history = self._prepare_payload(user_input, conversation_id, stream=True)
 
         base_url = self.entry.data.get("base_url")
@@ -129,3 +129,18 @@ class LemonadeAgent:
             yield "An error occurred during streaming."
         
         current_history.append({"role": "assistant", "content": full_response})
+
+    # --- NUEVA FUNCIÓN WRAPPER ---
+    async def async_stream_response(self, user_input: str, conversation_id: str | None) -> AsyncGenerator["IntentResponse", None]:
+        """Yields IntentResponse objects for each chunk of the response."""
+        from homeassistant.helpers.intent import IntentResponse
+
+        # Empezamos con un evento para indicar que estamos trabajando (la UI mostrará "...")
+        yield IntentResponse(speech={"plain": {"speech": "...", "extra_data": None}})
+        
+        full_response_text = ""
+        async for chunk in self.async_process_stream(user_input, conversation_id):
+            full_response_text += chunk
+            response = IntentResponse()
+            response.async_set_speech(full_response_text)
+            yield response
