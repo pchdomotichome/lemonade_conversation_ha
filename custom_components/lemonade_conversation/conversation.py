@@ -11,7 +11,6 @@ from homeassistant.components.conversation import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-# 1. ¡CAMBIO CLAVE EN LA IMPORTACIÓN!
 from homeassistant.helpers.intent import IntentResponse
 
 from .conversation_agent import LemonadeAgent
@@ -41,33 +40,54 @@ class LemonadeConversationEntity(ConversationEntity):
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
+        """Return a list of supported languages."""
         return "*"
 
+    @property
+    def has_stream_support(self) -> bool:
+        """Return whether the agent supports streaming responses."""
+        # Leemos la opción 'stream' de la configuración de la integración.
+        # Si no existe, por defecto es False.
+        return self.entry.options.get("stream", False)
+
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
-        """Process a sentence."""
+        """Process a sentence, either by streaming or as a single response."""
         if self._agent is None:
+            # Creamos la instancia del agente la primera vez que se usa.
             self._agent = LemonadeAgent(self.hass, self._entry)
 
+        # Si el streaming está activado, devolvemos un generador asíncrono.
+        # Home Assistant se encargará de consumirlo.
+        if self.has_stream_support:
+            return ConversationResult(
+                response=IntentResponse.from_async_stream(
+                    self.hass,
+                    self._agent.async_process_stream(
+                        user_input.text, user_input.conversation_id
+                    ),
+                    user_input.language,
+                ),
+                conversation_id=user_input.conversation_id,
+            )
+
+        # Si el streaming está desactivado, usamos el método de respuesta completa.
         try:
             agent_response = await self._agent.async_process(
                 user_input.text, user_input.conversation_id
             )
-            
-            # 2. ¡CAMBIO CLAVE EN LA CREACIÓN DE LA RESPUESTA!
-            # Creamos la instancia directamente.
             response = IntentResponse(language=user_input.language)
             response.async_set_speech(agent_response["response"])
-
+            
             return ConversationResult(
                 response=response, conversation_id=user_input.conversation_id
             )
         except Exception:
-            _LOGGER.exception("Error processing Lemonade conversation")
+            _LOGGER.exception("Error processing Lemonade conversation (non-streamed)")
             
-            # Corregimos también la respuesta de error.
             response = IntentResponse(language=user_input.language)
             response.async_set_error(
-                "intent_error", "Ocurrió un error inesperado al procesar la solicitud."
+                "intent_error",
+                "Ocurrió un error inesperado al procesar la solicitud.",
             )
             return ConversationResult(
                 response=response, conversation_id=user_input.conversation_id
