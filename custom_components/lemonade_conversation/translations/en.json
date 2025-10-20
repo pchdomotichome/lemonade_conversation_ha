@@ -5,7 +5,8 @@
         "menu_options": {
           "general": "General Settings",
           "personality": "Personality",
-          "parameters": "Model Parameters"
+          "parameters": "Model Parameters",
+          "advanced": "Advanced"
         }
       },
       "general": {
@@ -27,8 +28,16 @@
           "top_k": "Top K",
           "top_p": "Top P"
         }
+      },
+      "advanced": {
+        "title": "Advanced Settings",
+        "data": {
+          "stream": "Enable response streaming (for text chat)"
+        }
       }
     },
+    
+    
     "abort": {
       "reconfigure_failed_missing_url": "Could not start reconfiguration because the original Base URL is missing. Please remove and re-add the integration."
     }
