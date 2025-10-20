@@ -42,24 +42,17 @@ class LemonadeConversationEntity(ConversationEntity):
         """Return a list of supported languages."""
         return "*"
 
+    # has_stream_support se puede dejar, pero no se usará por ahora.
     @property
     def has_stream_support(self) -> bool:
         """Return whether the agent supports streaming responses."""
-        return self.agent.entry.options.get("stream", False)
+        return False # Forzamos a que sea siempre False.
 
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
         """Process a sentence."""
         
-        if self.has_stream_support:
-            # La respuesta es un generador de IntentResponse, que HA sabe cómo manejar.
-            return ConversationResult(
-                response=self.agent.async_stream_response(
-                    user_input.text, user_input.conversation_id
-                ),
-                conversation_id=user_input.conversation_id,
-            )
-
-        # Lógica sin streaming (ya funciona)
+        # Ignoramos la opción de streaming y vamos siempre por la ruta segura.
+        
         response_dict = await self.agent.async_process(
             user_input.text, user_input.conversation_id
         )
