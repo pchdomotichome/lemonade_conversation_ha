@@ -11,15 +11,16 @@ from homeassistant.config_entries import ConfigFlow, OptionsFlow, ConfigEntry
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+# Importamos el selector de texto
+from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
 
 from .const import DOMAIN
 
+# (El resto del archivo hasta la clase OptionsFlow se mantiene igual...)
 _LOGGER = logging.getLogger(__name__)
-
 DEFAULT_MODEL = "local-model"
 
 async def get_models(hass, base_url: str) -> list[str]:
-    # (Esta función no cambia)
     session = async_get_clientsession(hass)
     url = f"{base_url.rstrip('/')}/api/v1/models"
     try:
@@ -31,10 +32,7 @@ async def get_models(hass, base_url: str) -> list[str]:
         _LOGGER.error("Failed to get models from %s: %s", url, e)
         return []
 
-# --- CONFIGURACIÓN INICIAL (ConfigFlow) ---
-# (Esta clase no cambia, la dejamos como está)
 class LemonadeConfigFlow(ConfigFlow, domain=DOMAIN):
-    # ... (todo el contenido de LemonadeConfigFlow se mantiene igual)
     VERSION = 1
     user_data: dict[str, Any] = {}
 
@@ -60,7 +58,7 @@ class LemonadeConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             final_data = {**self.user_data, **user_input}
-            # Inicializamos las opciones con un system_prompt por defecto al crear la entrada
+            # Se crea la entrada con opciones por defecto para system_prompt
             return self.async_create_entry(
                 title="Lemonade Conversation",
                 data=final_data,
@@ -76,21 +74,17 @@ class LemonadeConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Required("model", default=default_selection): vol.In(models),
             })
         )
-
+    
+    # Esta función ahora es estática y el OptionsFlow se encarga de todo
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         return LemonadeOptionsFlowHandler(config_entry)
 
 
-# --- RECONFIGURACIÓN (OptionsFlow) ---
-# (Aquí aplicamos los cambios del menú y el system prompt)
 class LemonadeOptionsFlowHandler(OptionsFlow):
     """Handle an options flow for Lemonade."""
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
+    # Eliminamos el __init__ obsoleto
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Show the main menu for options."""
@@ -102,21 +96,22 @@ class LemonadeOptionsFlowHandler(OptionsFlow):
     async def async_step_general(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle general settings, like changing the model."""
         if user_input is not None:
-            # Combinamos las opciones existentes con las nuevas y guardamos
-            new_options = self.config_entry.options.copy()
-            new_options.update(user_input)
-            return self.async_create_entry(title="", data=new_options)
+            # La forma moderna de actualizar opciones
+            return self.async_create_entry(title="", data={**self.options, **user_input})
 
+        # La URL base se lee de la entrada original (data), no de las opciones
         models = await get_models(self.hass, self.config_entry.data["base_url"])
         if not models:
-            models = [self.config_entry.options.get("model", DEFAULT_MODEL)]
+            # El modelo actual puede estar en las opciones o en los datos iniciales
+            current_model = self.options.get("model", self.config_entry.data.get("model"))
+            models = [current_model]
 
         return self.async_show_form(
             step_id="general",
             data_schema=vol.Schema({
                 vol.Required(
                     "model",
-                    default=self.config_entry.options.get("model", self.config_entry.data.get("model"))
+                    default=self.options.get("model", self.config_entry.data.get("model"))
                 ): vol.In(models),
             }),
         )
@@ -124,17 +119,15 @@ class LemonadeOptionsFlowHandler(OptionsFlow):
     async def async_step_personality(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle personality settings, like the system prompt."""
         if user_input is not None:
-            new_options = self.config_entry.options.copy()
-            new_options.update(user_input)
-            return self.async_create_entry(title="", data=new_options)
+            return self.async_create_entry(title="", data={**self.options, **user_input})
 
-        # Usamos vol.TextSelector para un campo de texto multilínea
+        # Esta es la forma moderna y correcta de definir un campo de texto grande
         return self.async_show_form(
             step_id="personality",
             data_schema=vol.Schema({
                 vol.Optional(
                     "system_prompt",
-                    description={"suggested_value": self.config_entry.options.get("system_prompt", "")}
-                ): vol.TextSelector(vol.TextSelectorConfig(multiline=True)),
+                    default=self.options.get("system_prompt", "")
+                ): TextSelector(TextSelectorConfig(multiline=True)),
             }),
         )
