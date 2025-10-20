@@ -4,7 +4,8 @@
       "init": {
         "menu_options": {
           "general": "General Settings",
-          "personality": "Personality"
+          "personality": "Personality",
+          "parameters": "Model Parameters"
         }
       },
       "general": {
@@ -17,6 +18,14 @@
         "title": "Agent Personality",
         "data": {
           "system_prompt": "System Prompt"
+        }
+      },
+      "parameters": {
+        "title": "Model Parameters",
+        "data": {
+          "temperature": "Temperature",
+          "top_k": "Top K",
+          "top_p": "Top P"
         }
       }
     },
