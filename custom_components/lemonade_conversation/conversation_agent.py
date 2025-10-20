@@ -29,31 +29,37 @@ class LemonadeAgent:
         """Return the model currently in use."""
         return self.entry.options.get("model", self.entry.data.get("model"))
 
+    
+
     async def async_process(self, user_input: str, conversation_id: str | None = None) -> dict:
-        """Process a sentence by calling the Lemonade Server with history."""
+        """Process a sentence by calling the Lemonade Server with history and system prompt."""
         
-        # Obtenemos el historial para este ID de conversación. Si no existe, se crea un deque vacío.
+        # --- Obtener el System Prompt ---
+        system_prompt = self.entry.options.get("system_prompt", "") # Leemos el prompt desde las opciones
+        
+        # --- Gestión del Historial ---
         if conversation_id not in self.history:
             self.history[conversation_id] = deque(maxlen=CONVERSATION_HISTORY_LIMIT)
         
         current_history = self.history[conversation_id]
+        
+        # Si la conversación es nueva y hay un system prompt, lo añadimos el primero
+        if not current_history and system_prompt:
+            current_history.append({"role": "system", "content": system_prompt})
 
-        # Añadimos el nuevo mensaje del usuario al historial
         current_history.append({"role": "user", "content": user_input})
         
+        # ... el resto de la función (base_url, api_key, url, headers) se mantiene igual ...
         base_url = self.entry.data.get("base_url")
         api_key = self.entry.data.get("api_key")
-        
         url = f"{base_url.rstrip('/')}/api/v1/chat/completions"
-        
         headers = { "Content-Type": "application/json" }
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         
-        # El payload ahora contiene todo el historial de la conversación
         payload = {
             "model": self.model_in_use,
-            "messages": list(current_history) # Enviamos una lista, no el deque
+            "messages": list(current_history)
         }
         
         _LOGGER.debug(f"Sending payload to Lemonade Server: URL={url}, Payload={payload}")
@@ -71,7 +77,6 @@ class LemonadeAgent:
                     _LOGGER.error(f"Failed to parse Lemonade Server response: {e}. Raw response: {data}")
                     return {"response": "Recibí una respuesta del servidor pero no pude entender su formato."}
                 
-                # Añadimos la respuesta del asistente al historial para el próximo turno
                 assistant_response = message.strip()
                 current_history.append({"role": "assistant", "content": assistant_response})
                 
