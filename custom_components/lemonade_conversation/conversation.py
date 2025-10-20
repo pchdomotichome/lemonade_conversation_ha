@@ -51,23 +51,26 @@ class LemonadeConversationEntity(ConversationEntity):
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
         """Process a sentence, either by streaming or as a single response."""
         if self._agent is None:
-            # Aquí el objeto 'hass' se pasa durante la inicialización, pero la entidad
-            # ya lo tiene disponible como self.hass, así que no es necesario volver a pasarlo.
-            # Este es el cambio clave, heredamos hass de la entidad base.
             self._agent = LemonadeAgent(self.hass, self._entry)
 
+        # --- ¡ESTE BLOQUE ESTÁ CORREGIDO! ---
         if self.has_stream_support:
+            # 1. Creamos una respuesta de intención vacía.
+            response = IntentResponse(language=user_input.language)
+            # 2. Le adjuntamos nuestro generador asíncrono usando el método correcto.
+            response.async_set_speech_stream(
+                self._agent.async_process_stream(
+                    user_input.text, user_input.conversation_id
+                )
+            )
+            # 3. Devolvemos el resultado con esta respuesta preparada.
             return ConversationResult(
-                response=IntentResponse.from_async_stream(
-                    self.hass,
-                    self._agent.async_process_stream(
-                        user_input.text, user_input.conversation_id
-                    ),
-                    user_input.language,
-                ),
+                response=response,
                 conversation_id=user_input.conversation_id,
             )
+        # --- FIN DEL BLOQUE CORREGIDO ---
 
+        # El bloque 'else' (sin streaming) no cambia y ya funcionaba.
         try:
             agent_response = await self._agent.async_process(
                 user_input.text, user_input.conversation_id
