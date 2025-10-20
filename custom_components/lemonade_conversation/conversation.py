@@ -1,7 +1,7 @@
 # /config/custom_components/lemonade_conversation/conversation.py
 
 import logging
-from typing import AsyncGenerator, Literal
+from typing import Literal
 
 from homeassistant.components.conversation import (
     ConversationEntity,
@@ -48,32 +48,21 @@ class LemonadeConversationEntity(ConversationEntity):
         return self.agent.entry.options.get("stream", False)
 
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
-        """Process a sentence, supporting both streaming and single responses."""
+        """Process a sentence."""
         
-        # --- ¡ARQUITECTURA FINAL Y CORRECTA! ---
-        
-        # 1. Siempre creamos un objeto ConversationResult.
-        result = ConversationResult(
-            conversation_id=user_input.conversation_id,
-            response=IntentResponse(language=user_input.language),
-        )
-
-        # 2. Si el stream está activado...
         if self.has_stream_support:
-            # ...le adjuntamos el stream de texto al response.
-            result.response.async_set_speech_stream(
-                self.agent.async_process_stream(
+            # La respuesta es un generador de IntentResponse, que HA sabe cómo manejar.
+            return ConversationResult(
+                response=self.agent.async_stream_response(
                     user_input.text, user_input.conversation_id
-                )
+                ),
+                conversation_id=user_input.conversation_id,
             )
-            # Y devolvemos el ConversationResult preparado.
-            return result
 
-        # 3. Si el stream está desactivado...
+        # Lógica sin streaming (ya funciona)
         response_dict = await self.agent.async_process(
             user_input.text, user_input.conversation_id
         )
-        # ...le ponemos el texto completo al response.
-        result.response.async_set_speech(response_dict["response"])
-        # Y devolvemos el ConversationResult preparado.
-        return result
+        response = IntentResponse(language=user_input.language)
+        response.async_set_speech(response_dict["response"])
+        return ConversationResult(response=response, conversation_id=user_input.conversation_id)
