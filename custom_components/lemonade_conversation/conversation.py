@@ -46,18 +46,15 @@ class LemonadeConversationEntity(ConversationEntity):
     @property
     def has_stream_support(self) -> bool:
         """Return whether the agent supports streaming responses."""
-        # Leemos la opción 'stream' de la configuración de la integración.
-        # Si no existe, por defecto es False.
-        return self.entry.options.get("stream", False)
+        # ¡ESTA ES LA LÍNEA CORREGIDA!
+        return self._entry.options.get("stream", False)
 
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
         """Process a sentence, either by streaming or as a single response."""
         if self._agent is None:
-            # Creamos la instancia del agente la primera vez que se usa.
+            self.hass.helpers
             self._agent = LemonadeAgent(self.hass, self._entry)
 
-        # Si el streaming está activado, devolvemos un generador asíncrono.
-        # Home Assistant se encargará de consumirlo.
         if self.has_stream_support:
             return ConversationResult(
                 response=IntentResponse.from_async_stream(
@@ -70,7 +67,6 @@ class LemonadeConversationEntity(ConversationEntity):
                 conversation_id=user_input.conversation_id,
             )
 
-        # Si el streaming está desactivado, usamos el método de respuesta completa.
         try:
             agent_response = await self._agent.async_process(
                 user_input.text, user_input.conversation_id
