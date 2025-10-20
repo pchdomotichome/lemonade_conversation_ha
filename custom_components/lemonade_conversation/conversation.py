@@ -4,7 +4,6 @@ import logging
 from typing import AsyncGenerator, Literal
 
 from homeassistant.components.conversation import (
-    ConversationEntity,
     ConversationResult,
     ConversationInput,
     ConversationAgent, # Requerido para el nuevo enfoque
@@ -43,24 +42,19 @@ class LemonadeConversationEntity(ConversationAgent): # <- CAMBIO: Hereda de Conv
         """Return a list of supported languages."""
         return "*"
 
-    # La propiedad has_stream_support ya no es necesaria, se maneja directamente.
-
     async def async_process(
         self, user_input: ConversationInput
     ) -> ConversationResult | AsyncGenerator[ConversationResult, None]:
         """Process a sentence."""
         
-        # --- ¡ESTE ES EL NUEVO ENFOQUE CORRECTO! ---
         if self.agent.entry.options.get("stream"):
-            # Si el stream está activado, devolvemos el generador directamente.
             return self.async_process_stream(user_input)
 
-        # Si no, llamamos al método normal.
-        response_text = await self.agent.async_process(
+        response_dict = await self.agent.async_process(
             user_input.text, user_input.conversation_id
         )
         response = IntentResponse(language=user_input.language)
-        response.async_set_speech(response_text["response"])
+        response.async_set_speech(response_dict["response"])
         return ConversationResult(response=response, conversation_id=user_input.conversation_id)
 
 
@@ -69,19 +63,16 @@ class LemonadeConversationEntity(ConversationAgent): # <- CAMBIO: Hereda de Conv
     ) -> AsyncGenerator[ConversationResult, None]:
         """Process a sentence in a stream."""
         
-        # 1. Enviamos un evento 'intent-start' para que la UI sepa que estamos trabajando.
         yield ConversationResult(
             response=IntentResponse(language=user_input.language),
             conversation_id=user_input.conversation_id,
             event=ConversationResult.ListenEvent.INTENT_START,
         )
 
-        # 2. Iteramos sobre los trozos de texto de nuestro agente.
         try:
             async for chunk in self.agent.async_process_stream(
                 user_input.text, user_input.conversation_id
             ):
-                # Por cada trozo, creamos una respuesta parcial.
                 response = IntentResponse(language=user_input.language)
                 response.async_set_speech(chunk)
                 yield ConversationResult(
@@ -96,7 +87,6 @@ class LemonadeConversationEntity(ConversationAgent): # <- CAMBIO: Hereda de Conv
             yield ConversationResult(response=response, conversation_id=user_input.conversation_id)
             return
 
-        # 3. Al final, enviamos un evento 'intent-end' para que la UI sepa que hemos terminado.
         yield ConversationResult(
             response=IntentResponse(language=user_input.language),
             conversation_id=user_input.conversation_id,
