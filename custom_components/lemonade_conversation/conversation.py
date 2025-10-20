@@ -3,10 +3,11 @@
 import logging
 from typing import AsyncGenerator, Literal
 
+# Importamos solo lo que sabemos que existe
 from homeassistant.components.conversation import (
+    ConversationEntity,
     ConversationResult,
     ConversationInput,
-    ConversationAgent, # Requerido para el nuevo enfoque
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -28,7 +29,7 @@ async def async_setup_entry(
     async_add_entities([LemonadeConversationEntity(agent)])
 
 
-class LemonadeConversationEntity(ConversationAgent): # <- CAMBIO: Hereda de ConversationAgent
+class LemonadeConversationEntity(ConversationEntity): # <-- ¡CORREGIDO! Hereda de ConversationEntity
     """Lemonade Conversation Agent Entity."""
 
     def __init__(self, agent: LemonadeAgent) -> None:
@@ -39,17 +40,16 @@ class LemonadeConversationEntity(ConversationAgent): # <- CAMBIO: Hereda de Conv
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
-        """Return a list of supported languages."""
         return "*"
 
-    async def async_process(
-        self, user_input: ConversationInput
-    ) -> ConversationResult | AsyncGenerator[ConversationResult, None]:
+    async def async_process(self, user_input: ConversationInput) -> ConversationResult:
         """Process a sentence."""
         
+        # El tipo de retorno puede ser un generador, así que lo marcamos
         if self.agent.entry.options.get("stream"):
             return self.async_process_stream(user_input)
 
+        # Lógica sin streaming
         response_dict = await self.agent.async_process(
             user_input.text, user_input.conversation_id
         )
@@ -58,11 +58,10 @@ class LemonadeConversationEntity(ConversationAgent): # <- CAMBIO: Hereda de Conv
         return ConversationResult(response=response, conversation_id=user_input.conversation_id)
 
 
-    async def async_process_stream(
-        self, user_input: ConversationInput
-    ) -> AsyncGenerator[ConversationResult, None]:
-        """Process a sentence in a stream."""
+    async def async_process_stream(self, user_input: ConversationInput) -> AsyncGenerator[ConversationResult, None]:
+        """Process a sentence in a stream using yield."""
         
+        # Este es el enfoque correcto que usa yield y eventos
         yield ConversationResult(
             response=IntentResponse(language=user_input.language),
             conversation_id=user_input.conversation_id,
