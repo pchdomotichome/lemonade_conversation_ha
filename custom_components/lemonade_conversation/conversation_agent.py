@@ -26,28 +26,21 @@ class LemonadeAgent:
         # Las opciones (si se reconfiguran) tienen prioridad sobre los datos iniciales
         return self.entry.options.get("model", self.model)
 
+    # Reemplaza SOLO la función async_process en conversation_agent.py
+
     async def async_process(self, user_input: str, conversation_id: str | None = None) -> dict:
         """Process a sentence by calling the Lemonade Server."""
         
         base_url = self.entry.data.get("base_url")
         api_key = self.entry.data.get("api_key")
         
-        # ¡CORRECCIÓN CLAVE DE LA URL!
         url = f"{base_url.rstrip('/')}/api/v1/chat/completions"
         
-        headers = {
-            "Content-Type": "application/json",
-        }
-        # Solo añadimos el encabezado de autorización si se proporcionó una API Key
+        headers = { "Content-Type": "application/json" }
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         
-        payload = {
-            "model": self.model_in_use,
-            "messages": [
-                {"role": "user", "content": user_input}
-            ]
-        }
+        payload = { "model": self.model_in_use, "messages": [{"role": "user", "content": user_input}] }
         
         _LOGGER.debug(f"Sending payload to Lemonade Server: URL={url}, Payload={payload}")
 
@@ -56,20 +49,30 @@ class LemonadeAgent:
                 response.raise_for_status()
                 data = await response.json()
                 
-                _LOGGER.debug(f"Received response from Lemonade Server: {data}")
+                # Este es el log más importante que necesitamos ver
+                _LOGGER.debug(f"Received RAW response from Lemonade Server: {data}")
                 
-                message = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                # --- Bloque de parseo mejorado ---
+                try:
+                    # Intentamos acceder a la respuesta como si fuera OpenAI
+                    message = data["choices"][0]["message"]["content"]
+                except (KeyError, IndexError, TypeError) as e:
+                    _LOGGER.error(
+                        "Failed to parse Lemonade Server response in the expected OpenAI format. "
+                        f"Error: {e}. This is likely a structure mismatch. Please check the RAW response above."
+                    )
+                    return {"response": "Recibí una respuesta del servidor pero no pude entender su formato. Revisa los logs."}
                 
                 if not message:
-                    _LOGGER.error("Response from Lemonade Server is empty or malformed.")
-                    return {"response": "Recibí una respuesta vacía del servidor."}
+                    _LOGGER.warning(f"Parsed response from Lemonade, but the content was empty. Full response: {data}")
+                    return {"response": "El servidor respondió, pero el contenido estaba vacío."}
                 
                 return {"response": message.strip()}
+                # --- Fin del bloque de parseo ---
 
         except aiohttp.ClientError as err:
-            # Este log es el que nos daría la pista del error 404
             _LOGGER.error(f"Error connecting to Lemonade Server at {url}: {err}")
             return {"response": f"No pude conectar con el servidor Lemonade: {err}"}
-        except Exception as err:
+        except Exception:
             _LOGGER.exception("An unexpected error occurred during Lemonade conversation")
             return {"response": f"Ocurrió un error inesperado. Revisa los logs de Home Assistant para más detalles."}
