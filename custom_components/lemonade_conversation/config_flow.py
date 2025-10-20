@@ -18,14 +18,14 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "local-model"
+# Valores por defecto para los nuevos parámetros
+DEFAULT_TEMPERATURE = 0.7
+DEFAULT_TOP_K = 40
+DEFAULT_TOP_P = 0.9
 
-# ... (La función get_models y la clase LemonadeConfigFlow no cambian, las incluyo por completitud)
-
+# (La función get_models y la clase LemonadeConfigFlow no cambian)
 async def get_models(hass, base_url: str) -> list[str]:
-    """Get list of models from Lemonade server."""
-    if not base_url:
-        _LOGGER.warning("get_models called with no base_url.")
-        return []
+    if not base_url: return []
     session = async_get_clientsession(hass)
     url = f"{base_url.rstrip('/')}/api/v1/models"
     try:
@@ -33,15 +33,11 @@ async def get_models(hass, base_url: str) -> list[str]:
             response.raise_for_status()
             data = await response.json()
             return [model["id"] for model in data.get("data", [])]
-    except Exception as e:
-        _LOGGER.error("Failed to get models from %s: %s", url, e)
-        return []
+    except Exception: return []
 
 class LemonadeConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Lemonade Conversation."""
     VERSION = 1
     user_data: dict[str, Any] = {}
-
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if user_input is not None:
             self.user_data = user_input
@@ -50,74 +46,65 @@ class LemonadeConfigFlow(ConfigFlow, domain=DOMAIN):
             vol.Required("base_url", default="http://<IP_LEMONADE_SERVER>:8000"): str,
             vol.Optional("api_key", default=""): str,
         }))
-
     async def async_step_model(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         models = await get_models(self.hass, self.user_data.get("base_url", ""))
         if not models: models = [DEFAULT_MODEL]
         if user_input is not None:
             final_data = {**self.user_data, **user_input}
-            return self.async_create_entry(title="Lemonade Conversation", data=final_data, options={"system_prompt": "Eres un asistente de domótica útil y conciso."})
+            # Inicializamos todas las opciones con valores por defecto
+            return self.async_create_entry(title="Lemonade Conversation", data=final_data, options={
+                "system_prompt": "Eres un asistente de domótica útil y conciso.",
+                "temperature": DEFAULT_TEMPERATURE,
+                "top_k": DEFAULT_TOP_K,
+                "top_p": DEFAULT_TOP_P,
+            })
         suggested_model = "Qwen3-Coder-30B-A3B-Instruct-GGUF"
         default_selection = suggested_model if suggested_model in models else models[0]
         return self.async_show_form(step_id="model", data_schema=vol.Schema({vol.Required("model", default=default_selection): vol.In(models)}))
-
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         return LemonadeOptionsFlowHandler(config_entry)
 
 
-# --- ¡AQUÍ ESTÁ LA CLASE CORREGIDA! ---
+# --- OptionsFlow con el nuevo menú ---
 class LemonadeOptionsFlowHandler(OptionsFlow):
-    """Handle an options flow for Lemonade."""
-
     def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Show the main menu for options."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["general", "personality"],
+            menu_options=["general", "personality", "parameters"], # Añadimos el nuevo menú
         )
 
     async def async_step_general(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle general settings, like changing the model."""
+        # (Esta función no cambia)
         if user_input is not None:
-            # La forma moderna usa el .options de la entrada de configuración almacenada
             return self.async_create_entry(title="", data={**self.config_entry.options, **user_input})
-
         base_url = self.config_entry.data.get("base_url")
-        if not base_url:
-            return self.async_abort(reason="reconfigure_failed_missing_url")
-        
+        if not base_url: return self.async_abort(reason="reconfigure_failed_missing_url")
         models = await get_models(self.hass, base_url)
-        if not models:
-            current_model = self.config_entry.options.get("model", self.config_entry.data.get("model"))
-            models = [current_model]
-
-        return self.async_show_form(
-            step_id="general",
-            data_schema=vol.Schema({
-                vol.Required(
-                    "model",
-                    default=self.config_entry.options.get("model", self.config_entry.data.get("model"))
-                ): vol.In(models),
-            }),
-        )
+        if not models: models = [self.config_entry.options.get("model", self.config_entry.data.get("model"))]
+        return self.async_show_form(step_id="general", data_schema=vol.Schema({vol.Required("model", default=self.config_entry.options.get("model", self.config_entry.data.get("model"))): vol.In(models)}))
 
     async def async_step_personality(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle personality settings, like the system prompt."""
+        # (Esta función no cambia)
+        if user_input is not None:
+            return self.async_create_entry(title="", data={**self.config_entry.options, **user_input})
+        return self.async_show_form(step_id="personality", data_schema=vol.Schema({vol.Optional("system_prompt", default=self.config_entry.options.get("system_prompt", "")): TextSelector(TextSelectorConfig(multiline=True))}))
+
+    async def async_step_parameters(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Handle model parameter settings."""
         if user_input is not None:
             return self.async_create_entry(title="", data={**self.config_entry.options, **user_input})
 
         return self.async_show_form(
-            step_id="personality",
+            step_id="parameters",
             data_schema=vol.Schema({
-                vol.Optional(
-                    "system_prompt",
-                    default=self.config_entry.options.get("system_prompt", "")
-                ): TextSelector(TextSelectorConfig(multiline=True)),
-            }),
+                vol.Optional("temperature", default=self.config_entry.options.get("temperature", DEFAULT_TEMPERATURE)): vol.All(vol.Coerce(float), vol.Range(min=0, max=2)),
+                vol.Optional("top_k", default=self.config_entry.options.get("top_k", DEFAULT_TOP_K)): vol.All(vol.Coerce(int), vol.Range(min=0)),
+                vol.Optional("top_p", default=self.config_entry.options.get("top_p", DEFAULT_TOP_P)): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
+            })
         )
