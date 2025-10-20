@@ -3,7 +3,6 @@
 import logging
 from typing import AsyncGenerator, Literal
 
-# Importamos solo lo que sabemos que existe
 from homeassistant.components.conversation import (
     ConversationEntity,
     ConversationResult,
@@ -29,7 +28,7 @@ async def async_setup_entry(
     async_add_entities([LemonadeConversationEntity(agent)])
 
 
-class LemonadeConversationEntity(ConversationEntity): # <-- ¡CORREGIDO! Hereda de ConversationEntity
+class LemonadeConversationEntity(ConversationEntity):
     """Lemonade Conversation Agent Entity."""
 
     def __init__(self, agent: LemonadeAgent) -> None:
@@ -40,54 +39,41 @@ class LemonadeConversationEntity(ConversationEntity): # <-- ¡CORREGIDO! Hereda 
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
+        """Return a list of supported languages."""
         return "*"
 
-    async def async_process(self, user_input: ConversationInput) -> ConversationResult:
-        """Process a sentence."""
-        
-        # El tipo de retorno puede ser un generador, así que lo marcamos
-        if self.agent.entry.options.get("stream"):
-            return self.async_process_stream(user_input)
+    @property
+    def has_stream_support(self) -> bool:
+        """Return whether the agent supports streaming responses."""
+        return self.agent.entry.options.get("stream", False)
 
-        # Lógica sin streaming
+    async def async_process(self, user_input: ConversationInput) -> ConversationResult:
+        """Process a sentence, supporting both streaming and single responses."""
+        
+        # --- ¡ARQUITECTURA FINAL Y CORRECTA! ---
+        
+        # 1. Siempre creamos un objeto ConversationResult.
+        result = ConversationResult(
+            conversation_id=user_input.conversation_id,
+            response=IntentResponse(language=user_input.language),
+        )
+
+        # 2. Si el stream está activado...
+        if self.has_stream_support:
+            # ...le adjuntamos el stream de texto al response.
+            result.response.async_set_speech_stream(
+                self.agent.async_process_stream(
+                    user_input.text, user_input.conversation_id
+                )
+            )
+            # Y devolvemos el ConversationResult preparado.
+            return result
+
+        # 3. Si el stream está desactivado...
         response_dict = await self.agent.async_process(
             user_input.text, user_input.conversation_id
         )
-        response = IntentResponse(language=user_input.language)
-        response.async_set_speech(response_dict["response"])
-        return ConversationResult(response=response, conversation_id=user_input.conversation_id)
-
-
-    async def async_process_stream(self, user_input: ConversationInput) -> AsyncGenerator[ConversationResult, None]:
-        """Process a sentence in a stream using yield."""
-        
-        # Este es el enfoque correcto que usa yield y eventos
-        yield ConversationResult(
-            response=IntentResponse(language=user_input.language),
-            conversation_id=user_input.conversation_id,
-            event=ConversationResult.ListenEvent.INTENT_START,
-        )
-
-        try:
-            async for chunk in self.agent.async_process_stream(
-                user_input.text, user_input.conversation_id
-            ):
-                response = IntentResponse(language=user_input.language)
-                response.async_set_speech(chunk)
-                yield ConversationResult(
-                    response=response,
-                    conversation_id=user_input.conversation_id,
-                    event=ConversationResult.ListenEvent.INTENT_PARTIAL_RESPONSE,
-                )
-        except Exception:
-            _LOGGER.exception("Error during stream processing")
-            response = IntentResponse(language=user_input.language)
-            response.async_set_error("unknown_error", "An error occurred during streaming.")
-            yield ConversationResult(response=response, conversation_id=user_input.conversation_id)
-            return
-
-        yield ConversationResult(
-            response=IntentResponse(language=user_input.language),
-            conversation_id=user_input.conversation_id,
-            event=ConversationResult.ListenEvent.INTENT_END,
-        )
+        # ...le ponemos el texto completo al response.
+        result.response.async_set_speech(response_dict["response"])
+        # Y devolvemos el ConversationResult preparado.
+        return result
