@@ -46,13 +46,14 @@ class LemonadeConversationEntity(ConversationEntity):
     @property
     def has_stream_support(self) -> bool:
         """Return whether the agent supports streaming responses."""
-        # ¡ESTA ES LA LÍNEA CORREGIDA!
         return self._entry.options.get("stream", False)
 
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
         """Process a sentence, either by streaming or as a single response."""
         if self._agent is None:
-            self.hass.helpers
+            # Aquí el objeto 'hass' se pasa durante la inicialización, pero la entidad
+            # ya lo tiene disponible como self.hass, así que no es necesario volver a pasarlo.
+            # Este es el cambio clave, heredamos hass de la entidad base.
             self._agent = LemonadeAgent(self.hass, self._entry)
 
         if self.has_stream_support:
