@@ -66,8 +66,17 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     if not await client.async_test_connection():
         raise LemonadeConnectionError("Cannot connect to Lemonade server")
 
+    # Get available models
+    try:
+        models = await client.async_get_models()
+        model_ids = [model.get("id", "") for model in models]
+    except LemonadeException as err:
+        _LOGGER.error("Failed to get models: %s", err)
+        model_ids = []
+
     return {
         "title": data.get(CONF_NAME, DEFAULT_NAME),
+        "models": model_ids,
     }
 
 
@@ -89,7 +98,7 @@ class LemonadeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             except LemonadeException:
                 errors["base"] = "unknown"
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
