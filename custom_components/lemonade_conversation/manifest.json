@@ -1,13 +1,13 @@
 {
   "domain": "lemonade_conversation",
   "name": "Lemonade Conversation",
-  "logo": "https://raw.githubusercontent.com/pchdomotichome/lemonade_conversation_ha/main/images/logo.svg",
   "codeowners": ["@pchdomotichome"],
   "config_flow": true,
+  "dependencies": [],
   "documentation": "https://github.com/pchdomotichome/lemonade_conversation_ha",
   "integration_type": "service",
+  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/pchdomotichome/lemonade_conversation_ha/issues",
-  "requirements": [],
-  "version": "0.1.0",
-  "iot_class": "local_polling"
+  "requirements": ["aiohttp>=3.9.0"],
+  "version": "0.1.0"
 }
