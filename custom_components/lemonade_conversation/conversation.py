@@ -165,7 +165,7 @@ class LemonadeConversationEntity(ConversationEntity):
         else:
             self.history[conversation_id].insert(0, {"role": "system", "content": system_message_content})
 
-        # Add user message (clean, without context injection)
+        # Add user message
         self.history[conversation_id].append({"role": "user", "content": user_input.text})
 
         # Truncate history if needed
@@ -240,9 +240,9 @@ class LemonadeConversationEntity(ConversationEntity):
             _LOGGER.exception("Unexpected error processing conversation: %s", err)
             response_text = "Lo siento, ocurrió un error inesperado."
 
-        # Create response - exactly as Google does
+        # Create response
         intent_response = intent.IntentResponse(language=user_input.language)
-        intent_response.async_set_speech(response_text)  # Without language parameter
+        intent_response.async_set_speech(response_text)
 
         return ConversationResult(
             response=intent_response,
