@@ -1,7 +1,11 @@
 {
-    "name": "Lemonade Conversation",
-    "country": "AR",
-    "content_in_root": false,
-    "version": "0.2.1",
-    "homeassistant": "2025.7.0"
-  }
+  "name": "Lemonade Conversation",
+  "content_in_root": false,
+  "country": "AR",
+  "filename": "lemonade_conversation",
+  "render_readme": true,
+  "homeassistant": "2023.8.0",
+  "version": "0.1.0",
+  "zip_release": false,
+  "hide_default_branch": false
+}
