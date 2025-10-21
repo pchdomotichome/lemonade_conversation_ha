@@ -66,17 +66,8 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     if not await client.async_test_connection():
         raise LemonadeConnectionError("Cannot connect to Lemonade server")
 
-    # Get available models
-    try:
-        models = await client.async_get_models()
-        model_ids = [model.get("id", "") for model in models]
-    except LemonadeException as err:
-        _LOGGER.error("Failed to get models: %s", err)
-        model_ids = []
-
     return {
         "title": data.get(CONF_NAME, DEFAULT_NAME),
-        "models": model_ids,
     }
 
 
@@ -204,3 +195,54 @@ class LemonadeOptionsFlowHandler(config_entries.OptionsFlow):
                         max=MAX_TOP_P,
                         step=0.05,
                         mode=NumberSelectorMode.SLIDER,
+                    )
+                ),
+                vol.Optional(
+                    CONF_TOP_K,
+                    default=options.get(CONF_TOP_K, DEFAULT_TOP_K),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_TOP_K,
+                        max=MAX_TOP_K,
+                        step=1,
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
+                vol.Optional(
+                    CONF_MAX_TOKENS,
+                    default=options.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_MAX_TOKENS,
+                        max=MAX_MAX_TOKENS,
+                        step=256,
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
+                vol.Optional(
+                    CONF_PROMPT,
+                    default=options.get(CONF_PROMPT, DEFAULT_PROMPT),
+                ): TextSelector(
+                    TextSelectorConfig(
+                        type=TextSelectorType.TEXT,
+                        multiline=True,
+                    )
+                ),
+                vol.Optional(
+                    CONF_TIMEOUT,
+                    default=options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_TIMEOUT,
+                        max=MAX_TIMEOUT,
+                        step=5,
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=data_schema,
+        )
