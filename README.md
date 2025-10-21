@@ -1,72 +1,68 @@
 ### Work In PROGRESS. Don't Use IT ###
 
-# Lemonade Conversation for Home Assistant
+# 🍋 Lemonade Conversation for Home Assistant
 
-![Lemonade Conversation Logo](https://raw.githubusercontent.com/pchdomotichome/lemonade_conversation_ha/main/images/logo.svg)
+**Integración de Lemonade Server como agente de conversación para Home Assistant**
 
-**Bring your own local, private, and powerful voice assistant to Home Assistant.**
+[![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/pchdomotichome/lemonade_conversation_ha)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.8+-green)](https://www.home-assistant.io)
 
-This custom integration connects Home Assistant's conversation engine to a self-hosted [Lemonade Server](https://lemonade-server.ai/), allowing you to use powerful local Large Language Models (LLMs) as a fully-featured voice and chat assistant.
+## ✨ Características
 
----
+- 🤖 **Agente de Conversación** con Lemonade Server local
+- 🏠 **Control de Dispositivos** mediante comandos de voz/texto  
+- 🔍 **Consulta de Estados** en tiempo real con inyección de contexto
+- ⚙️ **Configuración UI** completa (Config Flow + Options Flow)
+- 🌐 **Soporte Multi-idioma**
+- 💬 **Chat Log** integrado con Home Assistant
 
-## Features
+## 🚀 Instalación
 
-- **Private by Design:** All processing is done locally on your Lemonade Server. No data ever leaves your network.
-- **Dynamic Model Selection:** Automatically fetches and lets you choose from the models available on your Lemonade Server.
-- **Conversation History:** The assistant remembers the last few turns of the conversation for contextual follow-up questions.
-- **Customizable Personality:** Use a "System Prompt" to give your assistant a unique personality, from a helpful butler to a sarcastic pirate.
-- **Tool Use (Coming Soon!):** Future updates will enable the assistant to control your Home Assistant devices directly.
+### Método 1: HACS (Próximamente)
+1. Agrega este repositorio a HACS
+2. Busca "Lemonade Conversation"
+3. Instala y reinicia
 
-## Installation
+### Método 2: Manual
+1. Copia la carpeta `lemonade_conversation` a `custom_components`
+2. Reinicia Home Assistant
+3. Ve a **Configuración → Dispositivos y Servicios → Integraciones**
+4. Haz clic en **Agregar Integración** y busca "Lemonade Conversation"
 
-The easiest way to install this integration is through the [Home Assistant Community Store (HACS)](https://hacs.xyz/).
+## ⚙️ Configuración
 
-1.  **Add Custom Repository:**
-    - Go to HACS > Integrations.
-    - Click the three dots in the top right corner and select "Custom repositories".
-    - In the "Repository" field, enter: `https://github.com/pchdomotichome/lemonade_conversation_ha`
-    - In the "Category" dropdown, select "Integration".
-    - Click "ADD".
-2.  **Install the Integration:**
-    - Search for "Lemonade Conversation" in HACS.
-    - Click "Install".
-3.  **Restart Home Assistant.**
+### Requisitos
+- Home Assistant 2023.8 o superior
+- Servidor Lemonade ejecutándose
 
-*Manual installation: Copy the `custom_components/lemonade_conversation` folder to a `custom_components` folder in your Home Assistant configuration directory.*
+### Configuración Inicial
+- **URL Base**: URL de tu servidor Lemonade (ej: `http://192.168.30.61:8000`)
+- **Modelo**: Modelo a utilizar (ej: `Qwen3-Coder-30B-A3B-Instruct-GGUF`)
+- **Temperatura**: Control de creatividad (0.0 - 2.0)
 
-## Configuration
+### Opciones Avanzadas
+- **Top P** - Nucleus sampling
+- **Top K** - Diversidad de respuestas  
+- **Max Tokens** - Límite de respuesta
+- **Prompt** - Prompt del sistema personalizado
+- **Timeout** - Tiempo de espera (segundos)
 
-1.  Go to **Settings > Devices & Services**.
-2.  Click **+ ADD INTEGRATION** and search for "Lemonade Conversation".
-3.  **Step 1: Connection**
-    - **Base URL:** Enter the full URL of your Lemonade Server (e.g., `http://192.168.1.100:8000`).
-    - **API Key (Optional):** Enter your API key if your server requires one.
-4.  **Step 2: Model Selection**
-    - Choose a language model from the dropdown. These are fetched live from your server.
-5.  Click **Submit**.
+## 💡 Ejemplos de Uso
 
-Once installed, you can further customize the assistant by clicking **CONFIGURE** on the integration card. This will allow you to change the model and set a custom personality via the **System Prompt**.
+### Consultas de Estado
+"¿Qué luces están encendidas?"
+"Me podés decir el estado de las luces del bunker?"
+"¿Hay alguna luz encendida en la cocina?"
 
-## Creating a Voice Assistant
 
-1.  Go to **Settings > Voice assistants**.
-2.  Click **+ ADD ASSISTANT**.
-3.  Give it a name (e.g., "Lemonade").
-4.  In the "Conversation agent" dropdown, select **"Lemonade Assistant"**.
-5.  Set your preferred Speech-to-Text (STT) and Text-to-Speech (TTS) engines.
-6.  Click **Create**.
+## 🐛 Reportar Problemas
 
-You can now talk to your new private assistant!
+Si encuentras algún problema, por favor [abre un issue](https://github.com/pchdomotichome/lemonade_conversation_ha/issues).
 
-## Roadmap
+## 🤝 Contribuir
 
-This project is under active development. Here's what's coming next:
-- **Phase 2:** Advanced model parameter tuning (temperature, top_k, etc.).
-- **Phase 3:** Configurable response streaming for text chat.
-- **Phase 4:** In-Context Learning (ICL) cache to speed up common queries.
-- **Phase 5:** Full device control via LLM Tool Use.
+Las contribuciones son bienvenidas. Por favor, lee las guías de contribución.
 
----
+## 📄 Licencia
 
-*This integration was expertly guided and co-developed with an advanced AI programming assistant.*
+MIT License
