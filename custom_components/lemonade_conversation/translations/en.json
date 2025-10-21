@@ -1,45 +1,41 @@
 {
-  "options": {
+  "config": {
     "step": {
-      "init": {
-        "menu_options": {
-          "general": "General Settings",
-          "personality": "Personality",
-          "parameters": "Model Parameters",
-          "advanced": "Advanced"
-        }
-      },
-      "general": {
-        "title": "General Settings",
+      "user": {
+        "title": "Configure Lemonade Conversation",
+        "description": "Configure the connection to your Lemonade server",
         "data": {
-          "model": "Language Model"
-        }
-      },
-      "personality": {
-        "title": "Agent Personality",
-        "data": {
-          "system_prompt": "System Prompt"
-        }
-      },
-      "parameters": {
-        "title": "Model Parameters",
-        "data": {
+          "name": "Name",
+          "base_url": "Server Base URL",
+          "model": "Model",
           "temperature": "Temperature",
-          "top_k": "Top K",
-          "top_p": "Top P"
-        }
-      },
-      "advanced": {
-        "title": "Advanced Settings",
-        "data": {
-          "stream": "Enable response streaming (for text chat)"
+          "timeout": "Timeout (seconds)"
         }
       }
     },
-    
-    
+    "error": {
+      "cannot_connect": "Failed to connect to Lemonade server",
+      "unknown": "Unexpected error"
+    },
     "abort": {
-      "reconfigure_failed_missing_url": "Could not start reconfiguration because the original Base URL is missing. Please remove and re-add the integration."
+      "already_configured": "Service is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Lemonade Options",
+        "description": "Configure the conversation agent behavior",
+        "data": {
+          "model": "Model",
+          "temperature": "Temperature (creativity)",
+          "top_p": "Top P (nucleus sampling)",
+          "top_k": "Top K (diversity)",
+          "max_tokens": "Maximum Tokens",
+          "prompt": "System Prompt",
+          "timeout": "Timeout (seconds)"
+        }
+      }
     }
   }
 }
