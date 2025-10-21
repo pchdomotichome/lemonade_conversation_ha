@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar Lemonade Conversation",
+        "description": "Configura la conexión a tu servidor Lemonade",
+        "data": {
+          "name": "Nombre",
+          "base_url": "URL Base del Servidor",
+          "model": "Modelo",
+          "temperature": "Temperatura",
+          "timeout": "Timeout (segundos)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se pudo conectar al servidor Lemonade",
+      "unknown": "Error inesperado"
+    },
+    "abort": {
+      "already_configured": "El servicio ya está configurado"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de Lemonade",
+        "description": "Configura el comportamiento del agente de conversación",
+        "data": {
+          "model": "Modelo",
+          "temperature": "Temperatura (creatividad)",
+          "top_p": "Top P (nucleus sampling)",
+          "top_k": "Top K (diversidad)",
+          "max_tokens": "Máximo de Tokens",
+          "prompt": "Prompt del Sistema",
+          "timeout": "Timeout (segundos)"
+        }
+      }
+    }
+  }
+}
