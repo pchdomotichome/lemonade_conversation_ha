@@ -1,15 +1,43 @@
-### Work In PROGRESS. Don't Use IT ###
+<p align="center">
+  <img src="images/logo.png" alt="Lemonade Conversation Logo" width="200"/>
+</p>
 
-# 🍋 Lemonade Conversation for Home Assistant
+<h1 align="center">🍋 Lemonade Conversation for Home Assistant</h1>
 
-**Integración de Lemonade Server como agente de conversación para Home Assistant**
+<p align="center">
+  <strong>Integración de Lemonade Server como agente de conversación para Home Assistant</strong>
+</p>
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/pchdomotichome/lemonade_conversation_ha/releases)
-[![hacs](https://img.shields.io/badge/HACS-Default-orange.svg)](https://hacs.xyz)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.8+-green.svg)](https://www.home-assistant.io)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center">
+  <img src="https://img.shields.io/github/v/release/pchdomotichome/lemonade_conversation_ha?style=for-the-badge" alt="Version">
+  <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge" alt="HACS"></a>
+  <img src="https://img.shields.io/badge/Home%20Assistant-2023.8+-41BDF5.svg?style=for-the-badge&logo=home-assistant" alt="Home Assistant">
+  <img src="https://img.shields.io/github/license/pchdomotichome/lemonade_conversation_ha?style=for-the-badge" alt="License">
+</p>
 
-Conecta tu servidor [Lemonade](https://lemonade-server.ai) local como un agente de conversación totalmente funcional en Home Assistant. Disfruta de control por voz/texto de tus dispositivos con **privacidad total** y **cero dependencias en la nube**.
+<p align="center">
+  <img src="https://img.shields.io/github/stars/pchdomotichome/lemonade_conversation_ha?style=for-the-badge" alt="Stars">
+  <img src="https://img.shields.io/github/downloads/pchdomotichome/lemonade_conversation_ha/total?style=for-the-badge" alt="Downloads">
+  <img src="https://img.shields.io/github/issues/pchdomotichome/lemonade_conversation_ha?style=for-the-badge" alt="Issues">
+</p>
+
+<p align="center">
+  Conecta tu servidor <a href="https://lemonade-server.ai">Lemonade</a> local como un agente de conversación totalmente funcional en Home Assistant.<br>
+  Disfruta de control por voz/texto de tus dispositivos con <strong>privacidad total</strong> y <strong>cero dependencias en la nube</strong>.
+</p>
+
+---
+
+## 🚀 Instalación Rápida
+
+<p align="center">
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=pchdomotichome&repository=lemonade_conversation_ha&category=integration">
+    <img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Agregar a HACS" height="40">
+  </a>
+  <a href="https://my.home-assistant.io/redirect/config_flow_start/?domain=lemonade_conversation">
+    <img src="https://my.home-assistant.io/badges/config_flow_start.svg" alt="Agregar Integración" height="40">
+  </a>
+</p>
 
 ---
 
@@ -26,9 +54,17 @@ Conecta tu servidor [Lemonade](https://lemonade-server.ai) local como un agente 
 
 ---
 
-## 🚀 Instalación
+## 📦 Instalación
 
 ### Método 1: HACS (Recomendado)
+
+**Opción A: Con un click** 🎯
+
+Haz click aquí para agregar el repositorio a HACS:
+
+[![Agregar a HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=pchdomotichome&repository=lemonade_conversation_ha&category=integration)
+
+**Opción B: Manual en HACS**
 
 1. Abre HACS en Home Assistant
 2. Ve a **Integraciones**
@@ -44,26 +80,32 @@ Conecta tu servidor [Lemonade](https://lemonade-server.ai) local como un agente 
 1. Descarga la carpeta `custom_components/lemonade_conversation`
 2. Cópiala a tu carpeta `config/custom_components/`
 3. **Reinicia Home Assistant**
-4. Ve a **Configuración → Dispositivos y Servicios → Agregar Integración**
-5. Busca "Lemonade Conversation"
 
 ---
 
 ## ⚙️ Configuración
 
+### Agregar la Integración
+
+Después de instalar y reiniciar, agrega la integración con un click:
+
+[![Agregar Integración](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=lemonade_conversation)
+
+O manualmente:
+1. Ve a **Configuración → Dispositivos y Servicios → Agregar Integración**
+2. Busca "Lemonade Conversation"
+3. Configura la URL de tu servidor Lemonade
+
 ### Requisitos Previos
 
 - Home Assistant 2023.8 o superior
-- Servidor Lemonade ejecutándose (local o en red)
+- Servidor Lemonade ejecutándose
 
 ### Configuración Inicial
 
-1. Ve a **Configuración → Dispositivos y Servicios → Agregar Integración**
-2. Busca "Lemonade Conversation"
-3. Completa los datos:
-   - **URL Base**: URL de tu servidor Lemonade (ej: `http://192.168.1.100:8000`)
-   - **Modelo**: Nombre del modelo a utilizar (ej: `Qwen3-Coder-30B-A3B-Instruct-GGUF`)
-   - **Temperatura**: Control de creatividad (0.0 - 2.0, default: 0.7)
+1. **URL Base**: URL de tu servidor Lemonade (ej: `http://192.168.1.100:8000`)
+2. **Modelo**: Nombre del modelo a utilizar (ej: `Qwen3-Coder-30B-A3B-Instruct-GGUF`)
+3. **Temperatura**: Control de creatividad (0.0 - 2.0, default: 0.7)
 
 ### Opciones Avanzadas
 
@@ -81,24 +123,34 @@ Puedes ajustar estos parámetros desde **Configuración → Dispositivos y Servi
 ## 💡 Ejemplos de Uso
 
 ### Consultas de Estado
--   "¿Qué luces están encendidas?"
--   "Dame el estado de las luces del bunker"
--   "¿Hay alguna luz encendida en la cocina?"
--   "¿Está encendida la luz del dormitorio?"
 
+```
+"¿Qué luces están encendidas?"
+"Dame el estado de las luces del bunker"
+"¿Hay alguna luz encendida en la cocina?"
+"¿Está encendida la luz del dormitorio?"
+```
+
+### Control de Dispositivos
+
+```
+"Enciende la luz principal del bunker"
+"Apaga todas las luces del dormitorio"
+"Podrías encender la luz de la cocina"
+"Apaga la luz del salón"
+```
 
 ### Conversación Natural
 
 El asistente responde en lenguaje natural y mantiene contexto de la conversación:
 
+```
+Usuario: "¿Qué luces están encendidas?"
+Lemonade: "Actualmente hay una luz encendida: la luz principal del bunker."
 
--     Usuario: "¿Qué luces están encendidas?"
-      Lemonade: "Actualmente hay una luz encendida: la luz principal del bunker."
-
-
--     Usuario: "Apágala"
-      Lemonade: "He apagado la luz principal del bunker."
-
+Usuario: "Apágala"
+Lemonade: "He apagado la luz principal del bunker."
+```
 
 ---
 
@@ -148,6 +200,8 @@ Las contribuciones son bienvenidas!
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
 
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) para más detalles.
+
 ---
 
 ## 🐛 Reportar Problemas
@@ -183,4 +237,6 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ---
 
-**Desarrollado con ❤️ en Argentina 🇦🇷**
+<p align="center">
+  <strong>Desarrollado con ❤️ en Argentina 🇦🇷</strong>
+</p>
