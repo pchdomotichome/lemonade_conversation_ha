@@ -1,13 +1,18 @@
 {
   "domain": "lemonade_conversation",
   "name": "Lemonade Conversation",
-  "codeowners": ["@pchdomotichome"],
+  "codeowners": [
+    "@pchdomotichome"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/pchdomotichome/lemonade_conversation_ha",
   "integration_type": "service",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/pchdomotichome/lemonade_conversation_ha/issues",
-  "requirements": ["aiohttp>=3.9.0"],
+  "requirements": [
+    "aiohttp>=3.9.0",
+    "voluptuous>=0.13.0"
+  ],
   "version": "0.1.0"
 }
